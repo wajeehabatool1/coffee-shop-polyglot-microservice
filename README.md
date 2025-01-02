@@ -13,6 +13,7 @@ This system simulates a coffee shop environment, where users can register, place
 
 ![image](https://github.com/user-attachments/assets/281e1b25-d6cd-4043-8e27-bc3a322819b7)
 
+![image](https://github.com/user-attachments/assets/37320e75-2fad-4e1d-9372-e7e37a01ff15)
 
 ---
 ## Technologies Used

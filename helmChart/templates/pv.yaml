@@ -1,0 +1,21 @@
+{{- if .Values.PersistentVolume.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.PersistentVolume.name }}
+  labels:
+    {{- range $key, $value := .Values.PersistentVolume.labels }}
+    {{ $key }}: {{ $value }}
+    {{- end }}
+spec:
+  capacity:
+    storage: {{ .Values.PersistentVolume.spec.capacity.storage }}
+  volumeMode: {{ .Values.PersistentVolume.spec.volumeMode }}
+  accessModes:
+    - {{ .Values.PersistentVolume.spec.accessModes }}
+  persistentVolumeReclaimPolicy: {{ .Values.PersistentVolume.spec.persistentVolumeReclaimPolicy }}
+  storageClassName: {{ .Values.PersistentVolume.spec.storageClassName }}
+  gcePersistentDisk:
+    pdName: {{ .Values.PersistentVolume.spec.gcePersistentDisk.pdName }}
+    fsType: {{ .Values.PersistentVolume.spec.gcePersistentDisk.fsType }}
+{{- end }}

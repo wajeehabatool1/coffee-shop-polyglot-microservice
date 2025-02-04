@@ -1,0 +1,141 @@
+global:
+  namespace: default
+frontend:
+  spec:
+    replicas: 1
+    matchlabels: frontend
+    templatelabels: frontend
+    containers:
+        name: frontend
+        image: wajeeha835/brewandblissfrontend:v0  
+        ports: 3000
+        env:
+          REACT_APP_CUSTOMER_SERVICE_URL: "http://35.238.227.236/register"
+          REACT_APP_ORDER_SERVICE_URL: "http://35.238.227.236/order"
+    service:
+       name: frontend
+       app: frontend
+       port: 3000
+       targetPort: 3000
+
+customer-service:
+  spec:
+    replicas: 1
+    matchlabels: customer-service
+    templatelabels: customer-service
+    containers:
+        name: customer-service
+        image: wajeeha835/customerservice:v0
+        ports: 8000
+        env:
+          MONGODB_URI: "mongodb://mongodb:27017"
+          DB_NAME: "coffeshop" 
+          HOST: "0.0.0.0"
+          PORT: 80000
+    service:
+       name: customer-service
+       app: customer-service
+       port: 8000
+       targetPort: 8000
+order-service:
+  spec:
+    replicas: 1
+    matchlabels: order-service
+    templatelabels: order-service
+    containers:
+        name: order-service
+        image: wajeeha835/orderservice:v0
+        ports: 8080
+        env:
+          MONGO_URI: "mongodb://mongodb:27017"
+          DB_NAME: "coffee_tracker"
+          CUSTOMER_SERVICE_URL: "http://customer-service:8000"
+          QUEUE_SERVICE_URL: "http://notification-service:9000"
+          ORDER_SERVICE_PORT: 8080
+    service:
+       name: order-service
+       app: order-service
+       port: 8080
+       targetPort: 8080
+notification-service:
+  spec:
+    replicas: 1
+    matchlabels: notification-service
+    templatelabels: notification
+    annotations:
+       vault.hashicorp.com/agent-inject: "true"
+       vault.hashicorp.com/role: "notification-role"
+       vault.hashicorp.com/agent-inject-secret-email-password: "secret/email"
+       vault.hashicorp.com/agent-inject-template-email-password:  |
+          {{- with secret "secret/email" -}}
+          EMAIL_PASSWORD={{ .Data.data.EMAIL_PASSWORD }}
+          {{- end }}
+    serviceAccountName: vault-auth
+    containers:
+        name: notification-service
+        image: wajeeha835/notificationservice:v0
+        ports: 9000
+        env:
+          EMAIL: "f219119@cfd.nu.edu.pk"
+          SMTP_HOST: "smtp.gmail.com"
+          SMTP_PORT:  "587"
+          PORT: 9000
+    service:
+       name: notification-service
+       app: notification-service
+       port: 9000
+       targetPort: 9000
+PersistentVolume:
+    enabled: true
+    name:  mongodb-pv
+    labels:
+       type: local
+       app: mongodb
+    spec:
+      capacity: 
+        storage: 10Gi
+      volumeMode: Filesystem
+      accessModes: ReadWriteOnce
+      persistentVolumeReclaimPolicy: Retain
+      storageClassName: standard
+      gcePersistentDisk:
+        pdName: mongodb-disk
+        fsType: ext4
+persistentVolumeClaim:
+    enabled: true
+    name: mongodb-pvc
+    labels:
+      type: local
+      app: mongodb  
+    spec:
+      accessModes: ReadWriteOnce
+      resources:
+        requests:
+           storage: 1Gi
+      storageClassName: standard
+      selector:
+        matchLabels:
+        type: local
+        app: mongodb
+    
+mongodb:
+  spec:
+    replicas: 1
+    matchlabels: mongodb
+    templatelabels: mongodb
+    containers:
+        name: mongodb
+        image: mongo:latest
+        ports:  27017
+        volumeMounts:
+            name:  mongodb-storage
+            mountPath: /data/db
+        volumes:
+          name: mongodb-storage
+          persistentVolumeClaim:
+            claimName: mongodb-pvc
+    service:
+       name: mongodb
+       app: mongodb
+       port: 27017
+       targetPort: 27017

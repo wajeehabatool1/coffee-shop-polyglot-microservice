@@ -1,0 +1,15 @@
+{{- range $serviceName, $serviceConfig := .Values }}
+{{- if hasKey $serviceConfig "service" }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $serviceConfig.service.name }}
+spec:
+  selector:
+    app: {{ $serviceConfig.service.app }}
+  ports:
+    - port: {{ $serviceConfig.service.port }}
+      targetPort: {{ $serviceConfig.service.targetPort }}
+{{- end }}
+{{- end }}

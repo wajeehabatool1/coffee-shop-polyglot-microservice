@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: wajeeha835/brewandblissfrontend:v0
+        ports:
+        - containerPort: 3000
+        env:
+        - name: REACT_APP_CUSTOMER_SERVICE_URL
+          value: "http://34.93.105.173/register"
+        - name: REACT_APP_ORDER_SERVICE_URL
+          value: "http://34.93.105.173/order"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 3000
+      targetPort: 3000

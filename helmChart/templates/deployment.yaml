@@ -1,0 +1,49 @@
+{{- range $deploymentName, $deploymentConfig := .Values }}
+{{- if and (hasKey $deploymentConfig "spec") (ne $deploymentName "PersistentVolume") (ne $deploymentName "persistentVolumeClaim") }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ lower $deploymentName }}
+spec:
+  replicas: {{ $deploymentConfig.spec.replicas }}
+  selector:
+    matchLabels:
+      app: {{ $deploymentName }}
+  template:
+    metadata:
+      labels:
+        app: {{ $deploymentName }}
+      {{- if eq $deploymentName "notification-service" }}
+      annotations:
+        {{- range $key, $value := $deploymentConfig.spec.annotations }}
+        {{ $key }}: {{ $value }}
+        {{- end }}
+      {{- end }}
+    spec:
+      {{- if eq $deploymentName "notification-service" }}
+      serviceAccountName: {{ $deploymentConfig.spec.serviceAccountName }}
+      {{- end }}
+      containers:
+      {{- with $deploymentConfig.spec.containers }}
+      - name: {{ .name }}
+        image: {{ .image }}
+        ports:
+        - containerPort: {{ .ports }}
+        env:
+        {{- range $key, $value := .env }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+        {{- end }}
+        {{- if eq $deploymentName "mongodb" }}
+        volumeMounts:
+        - name: {{ .volumeMounts.name }}
+          mountPath: {{ .volumeMounts.mountPath }}
+      volumes:
+      - name: {{ .volumes.name }}
+        persistentVolumeClaim:
+          claimName: {{ .volumes.persistentVolumeClaim.claimName }}
+        {{- end }}
+      {{- end }}
+{{- end }}
+{{- end }}

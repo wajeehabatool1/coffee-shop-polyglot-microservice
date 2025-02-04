@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "notification-role"
+        vault.hashicorp.com/agent-inject-secret-email-password: "secret/email"
+        vault.hashicorp.com/agent-inject-template-email-password: |
+          {{- with secret "secret/email" -}}
+          EMAIL_PASSWORD={{ .Data.data.EMAIL_PASSWORD }}
+          {{- end }}
+    spec:
+      serviceAccountName: vault-auth
+      containers:
+      - name: notification-service
+        image: wajeeha835/notificationservice:v1
+        ports:
+        - containerPort: 9000
+        env:
+        - name: EMAIL
+          value: "f219119@cfd.nu.edu.pk"
+        - name: SMTP_HOST
+          value: "smtp.gmail.com"
+        - name: SMTP_PORT
+          value: "587"
+        - name: PORT
+          value: "9000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+spec:
+  selector:
+    app: notification-service
+  ports:
+    - name: metrics
+      port: 9000
+      targetPort: 9000
